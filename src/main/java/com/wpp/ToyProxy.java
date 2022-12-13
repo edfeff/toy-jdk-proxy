@@ -76,17 +76,17 @@ public class ToyProxy {
             ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
             String classname = genClassname();
-            String classDesc = classname.replace(".", "/");
+            String classInter = classname.replace(".", "/");
             String superClassname = ToyProxy.class.getName();
-            String superClassDesc = Type.getDescriptor(ToyProxy.class);
+            String superClassInter = Type.getInternalName(ToyProxy.class);
 
 
             //接口名字
-            String[] interfacesNames = new String[interfaces.length];
+            String[] interfacesInterNames = new String[interfaces.length];
             for (int i = 0; i < interfaces.length; i++) {
-                interfacesNames[i] = Type.getDescriptor(interfaces[i]);
+                interfacesInterNames[i] = Type.getInternalName(interfaces[i]);
             }
-            classWriter.visit(V1_8, ACC_PUBLIC | ACC_SUPER, classDesc, null, superClassDesc, interfacesNames);
+            classWriter.visit(V1_8, ACC_PUBLIC | ACC_SUPER, classInter, null, superClassInter, interfacesInterNames);
             classWriter.visitSource("<genByToy>", null);
             //接口方法 生成字段
             for (int i = 0; i < methodInfos.size() + 3; i++) {
@@ -98,12 +98,14 @@ public class ToyProxy {
                 MethodVisitor methodVisitor = classWriter.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
                 methodVisitor.visitCode();
 
-                staticAddObjectMethods(methodVisitor, classDesc);
+                staticAddObjectMethods(methodVisitor, classInter);
 
                 for (MethodInfo methodInfo : methodInfos) {
-                    staticAddInterfacesMethods(methodVisitor, methodInfo, classDesc);
+                    staticAddInterfacesMethods(methodVisitor, methodInfo, classInter);
                 }
 
+                methodVisitor.visitInsn(RETURN);
+                methodVisitor.visitMaxs(6, 1);
                 methodVisitor.visitEnd();
             }
             //
@@ -131,7 +133,7 @@ public class ToyProxy {
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitFieldInsn(GETFIELD, "com/wpp/ToyProxy", "h", "Lcom/wpp/InvocationHandler;");
                 mv.visitVarInsn(ALOAD, 0);
-                mv.visitFieldInsn(GETSTATIC, classDesc, "m0", "Ljava/lang/reflect/Method;");
+                mv.visitFieldInsn(GETSTATIC, classInter, "m0", "Ljava/lang/reflect/Method;");
                 mv.visitInsn(ACONST_NULL);
                 mv.visitTypeInsn(CHECKCAST, "[Ljava/lang/Object;");
                 mv.visitMethodInsn(INVOKEINTERFACE, "com/wpp/InvocationHandler", "invoke", "(Ljava/lang/Object;Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;", true);
@@ -147,7 +149,7 @@ public class ToyProxy {
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitFieldInsn(GETFIELD, "com/wpp/ToyProxy", "h", "Lcom/wpp/InvocationHandler;");
                 mv.visitVarInsn(ALOAD, 0);
-                mv.visitFieldInsn(GETSTATIC, classDesc, "m1", "Ljava/lang/reflect/Method;");
+                mv.visitFieldInsn(GETSTATIC, classInter, "m1", "Ljava/lang/reflect/Method;");
                 mv.visitInsn(ICONST_1);
                 mv.visitTypeInsn(ANEWARRAY, "java/lang/Object");
                 mv.visitInsn(DUP);
@@ -167,7 +169,7 @@ public class ToyProxy {
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitFieldInsn(GETFIELD, "com/wpp/ToyProxy", "h", "Lcom/wpp/InvocationHandler;");
                 mv.visitVarInsn(ALOAD, 0);
-                mv.visitFieldInsn(GETSTATIC, classDesc, "m2", "Ljava/lang/reflect/Method;");
+                mv.visitFieldInsn(GETSTATIC, classInter, "m2", "Ljava/lang/reflect/Method;");
                 mv.visitInsn(ACONST_NULL);
                 mv.visitTypeInsn(CHECKCAST, "[Ljava/lang/Object;");
                 mv.visitMethodInsn(INVOKEINTERFACE, "com/wpp/InvocationHandler", "invoke", "(Ljava/lang/Object;Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;", true);
@@ -190,7 +192,7 @@ public class ToyProxy {
                 methodVisitor.visitVarInsn(ALOAD, 0);
                 methodVisitor.visitFieldInsn(GETFIELD, "com/wpp/ToyProxy", "h", "Lcom/wpp/InvocationHandler;");
                 methodVisitor.visitVarInsn(ALOAD, 0);
-                methodVisitor.visitFieldInsn(GETSTATIC, classDesc, methodInfo.methodFieldName, "Ljava/lang/reflect/Method;");
+                methodVisitor.visitFieldInsn(GETSTATIC, classInter, methodInfo.methodFieldName, "Ljava/lang/reflect/Method;");
 
                 if (parameterTypes.length == 0) {
                     methodVisitor.visitInsn(ACONST_NULL);
@@ -224,7 +226,7 @@ public class ToyProxy {
             byte[] bytes = classWriter.toByteArray();
             bytes = postProcesse(bytes);
             Class<?> clazz = defineClass(loader, classname, bytes);
-            Constructor<?> constructor = clazz.getConstructor(InvocationHandler.class);
+            Constructor<?> constructor = clazz.getConstructor(new Class[]{InvocationHandler.class});
             return (T) constructor.newInstance(this.h);
         } catch (Exception e) {
             e.printStackTrace();
