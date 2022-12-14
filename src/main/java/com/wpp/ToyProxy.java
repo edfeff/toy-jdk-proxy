@@ -58,16 +58,17 @@ public class ToyProxy {
 
     private <T> T getProxy(ClassLoader loader, Class<?>[] interfaces) {
         try {
-
-            Method hashCode = Object.class.getMethod("hashCode");
-            Method equals = Object.class.getMethod("equals", Object.class);
-            Method toString = Object.class.getMethod("toString");
+//            Method hashCode = Object.class.getMethod("hashCode");
+//            Method equals = Object.class.getMethod("equals", Object.class);
+//            Method toString = Object.class.getMethod("toString");
             int base = 3;
             List<MethodInfo> methodInfos = new ArrayList<>();
             for (Class<?> _interface : interfaces) {
                 Method[] ms = _interface.getMethods();
                 for (Method m : ms) {
-                    //TODO 判断default方法 判断重复方法
+                    if (m.isDefault()) {
+                        continue;
+                    }
                     methodInfos.add(new MethodInfo(_interface, m, "m" + base));
                     base++;
                 }
